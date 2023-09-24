@@ -16,23 +16,24 @@ public class DynamicListEnumerator<T> : IEnumerator<T>
     {
         _list = list;
         _pointer = -1;
-        _current = _list.Any() ? _list[_pointer] : default;
+        _current = _list.Any() ? _list[0] : default;
     }
 
     public bool MoveNext()
     {
-        if (!HasNext())
-        {
-            return false;
-        }
-        _current = _list[++_pointer];
-        return HasNext();
+        _pointer++;
+        if (_pointer >= _list.Count) return false;
+        _current = _list[_pointer];
+        return true;
     }
 
     public void Reset()
     {
         _pointer = -1;
-        _current = _list[0];
+        if (_list.Any())
+        {
+            _current = _list[0];
+        }
     }
     
     public void Dispose()
