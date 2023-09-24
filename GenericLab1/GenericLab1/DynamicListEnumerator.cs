@@ -3,31 +3,44 @@ using System.Numerics;
 
 namespace GenericLab1;
 
-public class DynamicListEnumerator<T> : IEnumerator<T> where T : struct
+public class DynamicListEnumerator<T> : IEnumerator<T> 
 {
-    private readonly Vector<T>[] _values;
-    private int _position = -1;
-    public T Current { get; }
-    object IEnumerator.Current => Current;
+    private readonly IList<T> _list;
+    private int _pointer;
+    private T _current;
+    public T Current => _current;
+    object IEnumerator.Current => _current!;
 
 
-    public DynamicListEnumerator(Vector<T>[] values)
+    public DynamicListEnumerator(IList<T> list)
     {
-        _values = values;
+        _list = list;
+        _pointer = -1;
+        _current = _list.Any() ? _list[_pointer] : default;
     }
 
     public bool MoveNext()
     {
-        _position++;
-        return (_position < _values.Length);
+        if (!HasNext())
+        {
+            return false;
+        }
+        _current = _list[++_pointer];
+        return HasNext();
     }
 
     public void Reset()
     {
-        _position = -1;
+        _pointer = -1;
+        _current = _list[0];
     }
-
+    
     public void Dispose()
     {
+    }
+
+    private bool HasNext()
+    {
+        return _pointer < _list.Count - 1;
     }
 }
