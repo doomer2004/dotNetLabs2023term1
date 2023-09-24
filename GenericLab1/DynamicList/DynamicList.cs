@@ -1,11 +1,9 @@
 ﻿using System.Collections;
-using System.Numerics;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text;
+using GenericLab1;
 
-namespace GenericLab1;
+namespace DynamicList;
 
-public class DynamicList<T> : IList<T>
+public class DynamicList<T> : IList<T>, IComparable<T>
 {
     private const int DefaultCapacity = 4;
     private int _size;
@@ -13,6 +11,10 @@ public class DynamicList<T> : IList<T>
     private T[] _items;
     public int Count => _size;
     public bool IsReadOnly { get; } = false;
+    
+    public event Action? ItemRemoved;
+    public event Action? CollectionCleared;
+    public event Action? CollectionResized;
     
     public DynamicList(int capacity)
     {
@@ -33,16 +35,17 @@ public class DynamicList<T> : IList<T>
         }
     }
 
-    /*public override string ToString()
+    public DynamicList(IEnumerable<T> items)
     {
-        var str = new StringBuilder();
-        for (int i = 0; i < Count; i++)
+        if (items is null)
+            throw new ArgumentNullException(nameof(items));
+        _capacity = DefaultCapacity;
+        _items = new T[_capacity];
+        foreach (var item in items)
         {
-            str.Append(_items[i]);
+            this.Add(item);
         }
-
-        return str.ToString();
-    }*/
+    }
 
     public IEnumerator<T> GetEnumerator()
     {
@@ -56,6 +59,8 @@ public class DynamicList<T> : IList<T>
 
     public void Add(T item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
         if (_size >= _capacity)
         {
             Resize();
@@ -69,10 +74,13 @@ public class DynamicList<T> : IList<T>
     {
         _items = new T[DefaultCapacity];
         _capacity = _size;
+        CollectionCleared.Invoke();
     }
 
     public bool Contains(T item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
         for (int i = 0; i < _size; i++)
         {
             var elements = _items[i];
@@ -101,6 +109,7 @@ public class DynamicList<T> : IList<T>
         var isRemoved = index != -1;
         RemoveAt(index);
         return isRemoved;
+        ItemRemoved.Invoke();
     }
 
     private void Resize()
@@ -110,6 +119,7 @@ public class DynamicList<T> : IList<T>
         Array.Copy(_items, tempArray, _size);
         _items = tempArray;
         _capacity = newCapacity;
+        CollectionResized.Invoke();
     }
 
     public int IndexOf(T item)
@@ -154,5 +164,10 @@ public class DynamicList<T> : IList<T>
             
             _items[index] = value;
         }
+    }
+
+    public int CompareTo(T? other)
+    {
+        throw new NotImplementedException();
     }
 }
