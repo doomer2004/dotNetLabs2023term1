@@ -1,14 +1,15 @@
 ﻿using System.Collections;
+using System.Numerics;
 using GenericLab1;
 
 namespace DynamicList;
 
-public class DynamicList<T> : IList<T>, IComparable<T>
+public class DynamicList<T> : IList<T>, IComparable<T> where T : struct
 {
     private const int DefaultCapacity = 4;
     private int _size;
     private int _capacity;
-    private T[] _items;
+    private Vector<T>[] _items;
     public int Count => _size;
     public bool IsReadOnly { get; } = false;
     
@@ -25,13 +26,15 @@ public class DynamicList<T> : IList<T>, IComparable<T>
         else if(capacity > 0)
         {
             _capacity = DefaultCapacity;
-            _items = new T[_capacity];
+            _items = new Vector<T>[_capacity];
         }
         else
         {
             _capacity = capacity;
             _size = 0;
-            _items = Array.Empty<T>();
+            _items = new[] {Vector<T>.Zero} ;
+
+        ;
         }
     }
 
@@ -40,12 +43,13 @@ public class DynamicList<T> : IList<T>, IComparable<T>
         if (items is null)
             throw new ArgumentNullException(nameof(items));
         _capacity = DefaultCapacity;
-        _items = new T[_capacity];
+        _items = new Vector<T>[_capacity];
         foreach (var item in items)
         {
             this.Add(item);
         }
     }
+    
 
     public IEnumerator<T> GetEnumerator()
     {
@@ -59,33 +63,30 @@ public class DynamicList<T> : IList<T>, IComparable<T>
 
     public void Add(T item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
         if (_size >= _capacity)
         {
             Resize();
         }
-    
-        _items[_size] = item;
+        
+        _items[_size] = new Vector<T>(item);
         _size++;
+
     }
     
     public void Clear()
     {
-        _items = new T[DefaultCapacity];
+        _items = new Vector<T>[DefaultCapacity];
         _capacity = _size;
-        CollectionCleared.Invoke();
+        //CollectionCleared.Invoke();
     }
 
     public bool Contains(T item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
         for (int i = 0; i < _size; i++)
         {
             var elements = _items[i];
 
-            if (elements?.Equals(item) == true)
+            if (elements.Equals(item) == true)
             {
                 return true;
             }
@@ -115,11 +116,11 @@ public class DynamicList<T> : IList<T>, IComparable<T>
     private void Resize()
     {
         var newCapacity = _capacity * 2;
-        var tempArray = new T[newCapacity];
+        var tempArray = new Vector<T>[newCapacity];
         Array.Copy(_items, tempArray, _size);
         _items = tempArray;
         _capacity = newCapacity;
-        CollectionResized.Invoke();
+        //CollectionResized.Invoke();
     }
 
     public int IndexOf(T item)
@@ -132,13 +133,13 @@ public class DynamicList<T> : IList<T>, IComparable<T>
         if (_size < index)
             throw new InvalidOperationException("Invalid index");
         if (_size == index)
-            _items[index] = item;
+            _items[index] = new Vector<T>(item);
         if (_size == _capacity)
             Resize();
         _size++;
         Array.Copy(_items, 0, 
             _items, index + 1, _items.Length);
-        _items[index] = item;
+        _items[index] = new Vector<T>(item);
     }
 
     public void RemoveAt(int index)
@@ -154,20 +155,25 @@ public class DynamicList<T> : IList<T>, IComparable<T>
 
     public T this[int index]
     {
-        get => _items[index];
-        set
+        get
         {
-            if (index >= _size)
+            if (index < 0 || index >= Count)
             {
-                throw new ArgumentException("Invalid index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
-            
-            _items[index] = value;
+
+            int vectorIndex = index / Vector<T>.Count;
+            int elementIndex = index % Vector<T>.Count;
+
+            return _items[vectorIndex][elementIndex];
         }
+
+        set => throw new NotImplementedException();
     }
 
-    public int CompareTo(T? other)
+
+    public int CompareTo(T other)
     {
-        throw new NotImplementedException();
+        return 0;
     }
 }
