@@ -14,7 +14,7 @@ public class DynamicListEnumerator<T> : IEnumerator<T>
 
     public DynamicListEnumerator(IList<T> list)
     {
-        _list = list;
+        _list = list ?? throw new NullReferenceException(nameof(list));
         _pointer = -1;
         _current = _list.Any() ? _list[0] : default;
     }
@@ -39,9 +39,5 @@ public class DynamicListEnumerator<T> : IEnumerator<T>
     public void Dispose()
     {
     }
-
-    private bool HasNext()
-    {
-        return _pointer < _list.Count - 1;
-    }
+    
 }
