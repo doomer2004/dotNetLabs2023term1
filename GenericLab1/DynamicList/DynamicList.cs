@@ -13,6 +13,8 @@ public sealed class DynamicList<T> : IList<T> where T : struct
     private T[] _items;
     public int Count => _size;
     public bool IsReadOnly { get; } = false;
+    
+    public event Action<NotifyArrayChangedEventArgs<T>>? ArrayChanged; 
 
     public DynamicList()
     {
@@ -50,46 +52,8 @@ public sealed class DynamicList<T> : IList<T> where T : struct
         }
     }
     
-    public EventHandler<ArrayItemEventArgs<T>> ItemAdded;
 
-    public EventHandler<ArrayItemEventArgs<T>> ItemRemoved;
-
-    public EventHandler<ArrayEventArgs> DynamicListCleared;
-
-    public EventHandler<ArrayResizedEventArgs> DynamicListResized;
-
-    private void OnItemAdded(T item, int index)
-    {
-        if (ItemAdded != null)
-        {
-            ItemAdded(this, new ArrayItemEventArgs<T>(item, index, ArrayAction.Add));
-        }
-    }
-
-    private void OnItemRemoved(T item, int index)
-    {
-        if (ItemRemoved != null)
-        {
-            ItemRemoved(this, new ArrayItemEventArgs<T>(item, index, ArrayAction.Remove));
-        }
-    }
-
-    private void OnArrayCleared()
-    {
-        if (DynamicListCleared != null)
-        {
-            DynamicListCleared(this, new ArrayEventArgs(ArrayAction.Clear));
-        }
-    }
-
-    private void OnArrayResized(int oldCapacity)
-    {
-        if (DynamicListResized != null)
-        {
-            DynamicListResized(this, new ArrayResizedEventArgs(oldCapacity, _capacity));
-        }
-    }
-
+  
     public IEnumerator<T> GetEnumerator()
     {
         return new DynamicListEnumerator<T>(this);
@@ -113,10 +77,11 @@ public sealed class DynamicList<T> : IList<T> where T : struct
     
     public void Clear()
     {
+        _size = 0;
         _items = new T[DefaultCapacity];
-        _capacity = _size;
+        _capacity = DefaultCapacity;
         
-        OnArrayCleared();
+        ArrayChanged?.Invoke(new NotifyArrayChangedEventArgs<T>(ArrayAction.Clear));
     }
 
     public bool Contains(T item)
@@ -160,7 +125,7 @@ public sealed class DynamicList<T> : IList<T> where T : struct
         _items = tempArray;
         _capacity = newCapacity;
         
-        OnArrayResized(oldCapacity);
+        ArrayChanged?.Invoke(new NotifyArrayChangedEventArgs<T>(ArrayAction.Resize, oldCapacity, newCapacity));
     }
 
     public int IndexOf(T item)
@@ -179,7 +144,8 @@ public sealed class DynamicList<T> : IList<T> where T : struct
         int properIndex = GetProperIndex(index, toInsert: true);
         _items[properIndex] = item;
         _size++;
-        OnItemAdded(item, index);
+        
+        ArrayChanged?.Invoke(new NotifyArrayChangedEventArgs<T>(ArrayAction.Add, item, index));
     }
     private int GetProperIndex(int index, bool toInsert = false)
     {
@@ -202,7 +168,9 @@ public sealed class DynamicList<T> : IList<T> where T : struct
         _size--;
         Array.Copy(_items, index + 1,
             _items, index, _size - index);
-        OnItemRemoved(item, index);
+        
+        
+        ArrayChanged?.Invoke(new NotifyArrayChangedEventArgs<T>(ArrayAction.Remove, item, index));
     }
 
     public T this[int index]
